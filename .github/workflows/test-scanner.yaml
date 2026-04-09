@@ -42,6 +42,10 @@ jobs:
           }
           TFEOF
 
+      - name: Install action dependencies
+        run: npm install
+        working-directory: .github/actions/tf-scanner
+
       - name: Run TF Scanner
         id: scan
         uses: ./.github/actions/tf-scanner
