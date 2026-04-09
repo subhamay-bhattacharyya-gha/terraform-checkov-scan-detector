@@ -1,0 +1,62 @@
+name: Test TF Scanner
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create test Terraform files
+        run: |
+          mkdir -p tf
+          cat > tf/main.tf << 'TFEOF'
+          module "vpc" {
+            source  = "terraform-aws-modules/vpc/aws"
+            version = "5.1.0"
+          }
+
+          resource "aws_s3_bucket" "artifacts" {
+            bucket = "my-artifacts"
+          }
+
+          resource "aws_iam_role" "lambda_exec" {
+            name = "lambda-exec-role"
+          }
+          TFEOF
+
+          mkdir -p tf/modules/networking
+          cat > tf/modules/networking/main.tf << 'TFEOF'
+          module "subnet" {
+            source = "terraform-aws-modules/subnet/aws"
+          }
+
+          resource "aws_vpc" "main" {
+            cidr_block = "10.0.0.0/16"
+          }
+
+          resource "google_storage_bucket" "logs" {
+            name = "my-logs"
+          }
+          TFEOF
+
+      - name: Run TF Scanner
+        id: scan
+        uses: ./.github/actions/tf-scanner
+        with:
+          terraform_dir: "tf"
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Print scan result
+        run: echo '${{ steps.scan.outputs.result }}' | jq .
+
+      - name: Print gist mapping
+        run: echo '${{ steps.scan.outputs.gist_mapping }}' | jq .
+
+      - name: List resource services
+        run: echo '${{ steps.scan.outputs.result }}' | jq -r '.resources[] | .service'

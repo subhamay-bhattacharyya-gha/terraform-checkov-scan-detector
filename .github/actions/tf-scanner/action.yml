@@ -1,0 +1,34 @@
+name: Terraform Resource Scanner
+description: >
+  Scans a Terraform directory recursively, extracts all module blocks and
+  resource blocks from .tf files, and outputs a JSON summary of modules
+  (name + source) and resources (type + human-readable service name).
+
+inputs:
+  terraform_dir:
+    description: "Path to the Terraform directory to scan (relative to the repo root)."
+    required: false
+    default: "tf"
+  gist_id:
+    description: "ID of the private gist containing checkov-scan-mapping.json."
+    required: false
+    default: "1b434fbced86f74e1a8dd42c7ec09bd8"
+  github_token:
+    description: "GitHub token with gist scope for fetching private gists."
+    required: true
+
+outputs:
+  result:
+    description: >
+      JSON string with two keys:
+        - modules: array of { name, source }
+        - resources: array of { type, service }
+    value: ${{ steps.scan.outputs.result }}
+  gist_mapping:
+    description: >
+      JSON string with the content of checkov-scan-mapping.json from the private gist.
+    value: ${{ steps.scan.outputs.gist_mapping }}
+
+runs:
+  using: node20
+  main: index.js
