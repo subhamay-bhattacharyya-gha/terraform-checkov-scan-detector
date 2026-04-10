@@ -1,3 +1,17 @@
+# 1.0.0 (2026-04-10)
+
+
+### Bug Fixes
+
+* add package.json and npm install step for tf-scanner action ([a75c32b](https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector/commit/a75c32b8da059498ee7f2119e9e672d62acd4e4d))
+* update workflow name for clarity ([bbf0ffc](https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector/commit/bbf0ffcdfe2878d9d24dcc1f39c6f8780f84298f))
+
+
+### Features
+
+* add Terraform resource scanner GitHub Action ([38ec4fd](https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector/commit/38ec4fd21a21afffd079dff7ce00f2d2e9b26a6f))
+* fetch service mapping from external repo and emit mapped_services ([e1f5366](https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector/commit/e1f53662493df8c334ed769210dab0e17d385da2))
+
 ## [1.1.2](https://github.com/subhamay-bhattacharyya-gha/github-action-template/compare/v1.1.1...v1.1.2) (2025-05-21)
 
 
