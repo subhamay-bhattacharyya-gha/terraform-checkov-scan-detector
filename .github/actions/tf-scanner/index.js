@@ -3,40 +3,47 @@ const path = require('path');
 const https = require('https');
 const core = require('@actions/core');
 
-function fetchGist(gistId, token) {
+function fetchMappingFromRepo(repo, filePath, ref, token) {
   return new Promise((resolve, reject) => {
+    const apiPath = `/repos/${repo}/contents/${filePath}?ref=${ref}`;
+    const headers = {
+      'User-Agent': 'tf-scanner-action',
+      'Accept': 'application/vnd.github.v3.raw',
+    };
+    if (token) {
+      headers['Authorization'] = `token ${token}`;
+    }
+
     const options = {
       hostname: 'api.github.com',
-      path: `/gists/${gistId}`,
-      headers: {
-        'User-Agent': 'tf-scanner-action',
-        'Authorization': `token ${token}`,
-        'Accept': 'application/vnd.github.v3+json'
-      }
+      path: apiPath,
+      headers,
     };
 
-    https.get(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        if (res.statusCode !== 200) {
-          reject(new Error(`Gist fetch failed with status ${res.statusCode}: ${data}`));
-          return;
-        }
-        try {
-          const gist = JSON.parse(data);
-          const file = gist.files['checkov-scan-mapping.json'];
-          if (!file) {
-            reject(new Error('checkov-scan-mapping.json not found in gist'));
+    https
+      .get(options, (res) => {
+        let data = '';
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        res.on('end', () => {
+          if (res.statusCode !== 200) {
+            reject(
+              new Error(
+                `Failed to fetch mapping from ${repo}/${filePath}@${ref} (status ${res.statusCode}): ${data}`
+              )
+            );
             return;
           }
-          resolve(JSON.parse(file.content));
-        } catch (e) {
-          reject(new Error(`Failed to parse gist content: ${e.message}`));
-        }
-      });
-      res.on('error', reject);
-    }).on('error', reject);
+          try {
+            resolve(JSON.parse(data));
+          } catch (e) {
+            reject(new Error(`Failed to parse mapping JSON: ${e.message}`));
+          }
+        });
+        res.on('error', reject);
+      })
+      .on('error', reject);
   });
 }
 
@@ -55,10 +62,15 @@ function walkDir(dir) {
 
 function deriveServiceName(resourceType) {
   const parts = resourceType.split('_');
-  parts.shift();
-  return parts
-    .map((s) => s.toUpperCase())
-    .join('_');
+  return parts.slice(0, 2).map((s) => s.toLowerCase()).join('_');
+}
+
+function deriveModuleService(source) {
+  const firstSegment = source.split('/')[0];
+  const stripped = firstSegment.startsWith('terraform-')
+    ? firstSegment.slice('terraform-'.length)
+    : firstSegment;
+  return stripped.toLowerCase().replace(/-/g, '_');
 }
 
 function parseTfFiles(terraformDir) {
@@ -81,7 +93,7 @@ function parseTfFiles(terraformDir) {
       const key = `${name}|${source}`;
       if (!moduleSet.has(key)) {
         moduleSet.add(key);
-        modules.push({ name, source });
+        modules.push({ name, source: deriveModuleService(source) });
       }
     }
 
@@ -95,14 +107,42 @@ function parseTfFiles(terraformDir) {
     }
   }
 
-  return { modules, resources };
+  const modules_services = Array.from(
+    new Set([
+      ...modules.map((m) => m.source),
+      ...resources.map((r) => r.service),
+    ])
+  );
+
+  return { modules, resources, modules_services };
+}
+
+function mapServices(modulesServices, mapping) {
+  const seen = new Set();
+  const mapped = [];
+  for (const key of modulesServices) {
+    if (Object.prototype.hasOwnProperty.call(mapping, key)) {
+      const value = mapping[key];
+      if (!seen.has(value)) {
+        seen.add(value);
+        mapped.push(value);
+      }
+    }
+  }
+  return mapped;
 }
 
 async function run() {
   try {
     const terraformDir = core.getInput('terraform_dir') || 'tf';
-    const gistId = core.getInput('gist_id');
+    const mappingRepo =
+      core.getInput('mapping_repo') ||
+      'subhamay-bhattacharyya-gha/checkov-custom-policies';
+    const mappingPath =
+      core.getInput('mapping_path') || 'config/service-map.json';
+    const mappingRef = core.getInput('mapping_ref') || 'main';
     const githubToken = core.getInput('github_token');
+
     const resolvedDir = path.resolve(process.cwd(), terraformDir);
 
     if (!fs.existsSync(resolvedDir)) {
@@ -111,19 +151,24 @@ async function run() {
     }
 
     const output = parseTfFiles(resolvedDir);
+
+    core.info(
+      `Fetching service mapping from ${mappingRepo}/${mappingPath}@${mappingRef}...`
+    );
+    const mapping = await fetchMappingFromRepo(
+      mappingRepo,
+      mappingPath,
+      mappingRef,
+      githubToken
+    );
+    output.mapped_services = mapServices(output.modules_services, mapping);
+
     const result = JSON.stringify(output);
 
     core.setOutput('result', result);
+    core.setOutput('mapped_services', JSON.stringify(output.mapped_services));
     core.info('Terraform scan result:');
     core.info(result);
-
-    if (gistId && githubToken) {
-      core.info('Fetching checkov-scan-mapping.json from private gist...');
-      const gistContent = await fetchGist(gistId, githubToken);
-      core.info('Gist content (checkov-scan-mapping.json):');
-      core.info(JSON.stringify(gistContent, null, 2));
-      core.setOutput('gist_mapping', JSON.stringify(gistContent));
-    }
   } catch (error) {
     core.setFailed(error.message);
   }
@@ -131,4 +176,4 @@ async function run() {
 
 run();
 
-module.exports = { walkDir, deriveServiceName, parseTfFiles };
+module.exports = { walkDir, deriveServiceName, deriveModuleService, parseTfFiles, mapServices };

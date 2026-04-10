@@ -9,25 +9,36 @@ inputs:
     description: "Path to the Terraform directory to scan (relative to the repo root)."
     required: false
     default: "tf"
-  gist_id:
-    description: "ID of the private gist containing checkov-scan-mapping.json."
+  mapping_repo:
+    description: "GitHub repository (owner/name) hosting the service mapping JSON file."
     required: false
-    default: "1b434fbced86f74e1a8dd42c7ec09bd8"
+    default: "subhamay-bhattacharyya-gha/checkov-custom-policies"
+  mapping_path:
+    description: "Path to the service mapping JSON file inside the mapping repository."
+    required: false
+    default: "config/service-map.json"
+  mapping_ref:
+    description: "Git ref (branch, tag, or commit SHA) to fetch the mapping file from."
+    required: false
+    default: "main"
   github_token:
-    description: "GitHub token with gist scope for fetching private gists."
-    required: true
+    description: "GitHub token used to fetch the mapping file (required for private repos)."
+    required: false
+    default: ""
 
 outputs:
   result:
     description: >
-      JSON string with two keys:
+      JSON string with keys:
         - modules: array of { name, source }
         - resources: array of { type, service }
+        - modules_services: distinct list of all module sources and resource services
+        - mapped_services: distinct list of mapped values (only when mapping_file is provided)
     value: ${{ steps.scan.outputs.result }}
-  gist_mapping:
+  mapped_services:
     description: >
-      JSON string with the content of checkov-scan-mapping.json from the private gist.
-    value: ${{ steps.scan.outputs.gist_mapping }}
+      JSON array of distinct mapped values looked up from the mapping_file.
+    value: ${{ steps.scan.outputs.mapped_services }}
 
 runs:
   using: node20
