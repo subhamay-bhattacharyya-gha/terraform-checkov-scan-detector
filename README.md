@@ -126,13 +126,20 @@ jobs:
 ```json
 {
   "modules": [
-    { "name": "vpc", "source": "terraform-aws-modules/vpc/aws" }
+    { "name": "vpc", "source": "aws_modules" }
   ],
   "resources": [
-    { "type": "aws_s3_bucket", "service": "S3_BUCKET" },
-    { "type": "aws_iam_role", "service": "IAM_ROLE" },
-    { "type": "google_storage_bucket", "service": "STORAGE_BUCKET" },
-    { "type": "azurerm_virtual_network", "service": "VIRTUAL_NETWORK" }
+    { "type": "aws_s3_bucket", "service": "aws_s3" },
+    { "type": "aws_iam_role", "service": "aws_iam" },
+    { "type": "google_storage_bucket", "service": "google_storage" },
+    { "type": "azurerm_virtual_network", "service": "azurerm_virtual" }
+  ],
+  "modules_services": [
+    "aws_modules",
+    "aws_s3",
+    "aws_iam",
+    "google_storage",
+    "azurerm_virtual"
   ]
 }
 ```

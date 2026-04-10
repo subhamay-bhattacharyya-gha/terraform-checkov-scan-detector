@@ -26,13 +26,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/subhamay-bhattacharyya-gha/github-action-template.git"
+    "url": "git+https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector.git"
   },
   "author": "Subhamay Bhattacharyya",
   "license": "MIT",
   "keywords": [],
   "bugs": {
-    "url": "https://github.com/subhamay-bhattacharyya-gha/github-action-template/issues"
+    "url": "https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector/issues"
   },
-  "homepage": "https://github.com/subhamay-bhattacharyya-gha/github-action-template#readme"
+  "homepage": "https://github.com/subhamay-bhattacharyya-gha/terraform-checkov-scan-detector#readme"
 }
