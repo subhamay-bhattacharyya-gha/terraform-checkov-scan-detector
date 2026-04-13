@@ -143,7 +143,15 @@ async function run() {
     const mappingRef = core.getInput('mapping_ref') || 'main';
     const githubToken = core.getInput('github_token');
 
+    core.debug(`Input terraform_dir: ${terraformDir}`);
+    core.debug(`Input mapping_repo: ${mappingRepo}`);
+    core.debug(`Input mapping_path: ${mappingPath}`);
+    core.debug(`Input mapping_ref: ${mappingRef}`);
+    core.debug(`Input github_token: ${githubToken ? '***' : '(empty)'}`);
+
     const resolvedDir = path.resolve(process.cwd(), terraformDir);
+    core.debug(`Resolved terraform directory: ${resolvedDir}`);
+    core.debug(`Current working directory: ${process.cwd()}`);
 
     if (!fs.existsSync(resolvedDir)) {
       core.setFailed(`Directory not found: ${terraformDir}`);
