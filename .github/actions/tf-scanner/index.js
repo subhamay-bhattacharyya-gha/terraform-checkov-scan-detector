@@ -66,6 +66,24 @@ function deriveServiceName(resourceType) {
 }
 
 function deriveModuleService(source) {
+  // Handle git:: URLs like git::https://github.com/org/terraform-aws-s3.git//modules/bucket?ref=v1.0.0
+  if (source.startsWith('git::')) {
+    const url = source.slice(5);
+    const match = url.match(/\/([^/]+?)(?:\.git)?(?:\/\/|$|\?)/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // Handle plain https GitHub URLs like https://github.com/org/terraform-aws-s3.git//modules/bucket?ref=v1.0.0
+  if (source.startsWith('https://') || source.startsWith('http://')) {
+    const match = source.match(/\/([^/]+?)(?:\.git)?(?:\/\/|$|\?)/);
+    if (match) {
+      return match[1];
+    }
+  }
+
+  // Handle registry sources like terraform-aws-modules/vpc/aws
   const firstSegment = source.split('/')[0];
   const stripped = firstSegment.startsWith('terraform-')
     ? firstSegment.slice('terraform-'.length)
@@ -93,7 +111,14 @@ function parseTfFiles(terraformDir) {
       const key = `${name}|${source}`;
       if (!moduleSet.has(key)) {
         moduleSet.add(key);
-        modules.push({ name, source: deriveModuleService(source) });
+        let derived = deriveModuleService(source);
+        if (derived === '.') {
+          derived = name.replace(/_/g, '-');
+        }
+        if (derived.startsWith('terraform-')) {
+          derived = derived.slice('terraform-'.length);
+        }
+        modules.push({ name, source: derived });
       }
     }
 
