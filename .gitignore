@@ -35,6 +35,7 @@ test-results/
 
 # GitHub Actions
 dist/
+!.github/actions/tf-scanner/dist/
 *.tgz
 
 # Misc

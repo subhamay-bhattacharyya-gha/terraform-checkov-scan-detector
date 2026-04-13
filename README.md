@@ -95,7 +95,7 @@ flowchart TD
 
 | Name           | Description                                                                                                     |
 |----------------|-----------------------------------------------------------------------------------------------------------------|
-| `result`       | JSON string containing `modules` (array of `{ name, source }`) and `resources` (array of `{ type, service }`). |
+| `result`       | JSON string containing `modules` (array of `{ name, source }`) and `resources` (array of `{ type, service }`).  |
 | `gist_mapping` | JSON string with the content of checkov-scan-mapping.json from the private gist.                                |
 
 ## Example Usage
